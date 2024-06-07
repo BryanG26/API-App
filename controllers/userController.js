@@ -1,8 +1,8 @@
-const bcrypt = require('bcrypt');
-const db = require('../config/db');
+// controllers/userController.js
+import db from '../config/db.js';
 
-exports.getAllUsers = (req, res) => {
-  db.query('SELECT * FROM Users', (err, results) => {
+export const getAllUsers = (req, res) => {
+  db.query('SELECT * FROM vw_UserInfo', (err, results) => {
     if (err) {
       return res.status(500).send(err);
     }
@@ -10,56 +10,73 @@ exports.getAllUsers = (req, res) => {
   });
 };
 
-exports.createUser = (req, res) => {
-  const { user_name, user_lastNames, user_birthday, user_email, user_password, user_country, user_gender } = req.body;
-  const saltRounds = 10;
+export const getUserById = (req, res) => {
+  const userId = parseInt(req.params.userId, 10);
 
-  bcrypt.hash(user_password, saltRounds, (err, hashedPassword) => {
+  db.query('CALL GetUserById(?)', [userId], (err, results) => {
     if (err) {
-      return res.status(500).send(err);
+      return res.status(500).send({ message: 'Error interno del servidor', error: err });
+    }
+    
+    if (results[0].length === 0) {
+      return res.status(404).send({ message: 'Usuario no encontrado' });
     }
 
-    db.query('INSERT INTO Users (user_name, user_lastNames, user_birthday, user_email, user_password, user_country, user_gender) VALUES (?, ?, ?, ?, ?, ?, ?)', 
-      [user_name, user_lastNames, user_birthday, user_email, hashedPassword, user_country, user_gender], (err, results) => {
-      if (err) {
-        return res.status(500).send(err);
-      }
-      res.status(201).send('User created successfully');
-    });
+    res.json(results[0][0]);
   });
 };
 
-exports.loginUser = (req, res) => {
-  const { user_email, user_password } = req.body;
+export const getUserTimesByName = (req, res) => {
+  const atletaName = req.params.atletaName;
 
-  db.query('SELECT * FROM Users WHERE user_email = ?', [user_email], (err, results) => {
+  const query = 'CALL GetUserTimesByName(?)';
+
+  db.query(query, [atletaName], (err, results) => {
     if (err) {
-      return res.status(500).send(err);
-    }
-    if (results.length === 0) {
-      return res.status(401).send('Invalid email or password');
+      return res.status(500).send({ message: 'Error interno del servidor', error: err });
     }
 
-    const user = results[0];
+    if (results[0].length === 0) {
+      return res.status(404).send({ message: 'Tiempos no encontrados' });
+    }
 
-    bcrypt.compare(user_password, user.user_password, (err, isMatch) => {
-      if (err) {
-        return res.status(500).send(err);
-      }
-      if (!isMatch) {
-        return res.status(401).send('Invalid email or password');
-      }
-
-      res.send('Login successful');
-    });
+    res.json(results[0]);
   });
 };
 
-exports.testConnection = (req, res) => {
-  db.query('SELECT 1', (err, results) => {
+export const getUserTimesByEventAndUser = (req, res) => {
+  const userId = parseInt(req.params.userId, 10);
+  const eventName = req.params.eventName;
+
+  const query = 'CALL GetUserTimesByEventAndUser(?, ?)';
+
+  db.query(query, [userId, eventName], (err, results) => {
     if (err) {
-      return res.status(500).send('Database connection failed');
+      return res.status(500).send({ message: 'Error interno del servidor', error: err });
     }
-    res.send('Database connection successful');
+
+    if (results[0].length === 0) {
+      return res.status(404).send({ message: 'No se encontraron tiempos para el usuario y evento especificados' });
+    }
+
+    res.json(results[0]);
+  });
+};
+
+export const getUsersByUserName = (req, res) => {
+  const userName = req.params.userName;
+
+  const query = 'CALL GetUsersByUserName(?)';
+
+  db.query(query, [userName], (err, results) => {
+    if (err) {
+      return res.status(500).send({ message: 'Error interno del servidor', error: err });
+    }
+
+    if (results[0].length === 0) {
+      return res.status(404).send({ message: 'No se encontró el Usuario especificado' });
+    }
+
+    res.json(results[0]);
   });
 };

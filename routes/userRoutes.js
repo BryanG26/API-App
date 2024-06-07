@@ -1,12 +1,13 @@
-const express = require('express');
+import express from 'express';
+import { getAllUsers, getUserById, getUserTimesByName, getUserTimesByEventAndUser, getUsersByUserName } from '../controllers/userController.js';
+
 const router = express.Router();
-const userController = require('../controllers/userController');
 
-router.get('/', userController.getAllUsers);
-router.post('/create', userController.createUser);
-router.post('/login', userController.loginUser);
+router.get('/', getAllUsers);
+router.get('/:userId', getUserById);
+router.get('/times/:atletaName', getUserTimesByName);
+router.get('/user-times/:userId/:eventName', getUserTimesByEventAndUser);
+router.get('/username/:userName', getUsersByUserName);
 
-// Ruta de prueba para verificar la conexión a la base de datos
-router.get('/test-connection', userController.testConnection);
 
-module.exports = router;
+export default router;
